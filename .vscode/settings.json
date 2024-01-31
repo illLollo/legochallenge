@@ -1,0 +1,9 @@
+{
+    "liveServer.settings.https": 
+    {
+    "enable": true, //set it true to enable the feature.
+    "cert": "C:\\Certbot\\archive\\server632.ddns.net\\fullchain1.pem", //full path of the certificate
+    "key": "C:\\Certbot\\archive\\server632.ddns.net\\privkey1.pem", //full path of the private key
+    "passphrase": "12345"
+}
+}

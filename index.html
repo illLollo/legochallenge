@@ -6,16 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="style.css">
-    <script defer src="script.js"></script>
+    <script defer src="scriptDraw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handtrackjs/dist/handtrack.min.js"></script>
+    <!-- <script defer src="scriptSwirlEffect.js"></script> -->
+    <script src="https://evanw.github.io/glfx.js/glfx.js"></script>
 </head>
 <body>
-    <div class="palette"></div>
-    <input type="text" placeholder="Inserisci url: ">
-    <button class="load">Carica Immagine</button>
-    <button class="download">scarica immagine</button>
+    <video src="" width="600px" height="400px" style="display: none;">
+        
+    </video>
+    <div class="palette">
+        <div class="color" style="background-color: red"></div>
+        <div class="color" style="background-color: blue"></div>
+        <div class="color" style="background-color: black" clicked></div>
+        <div class="color" style="background-color: green"></div>
+        <div class="color" style="background-color: yellow"></div>
+        <input class="colorpicker" type="color">
+    </div>
+    <div class="settings">
+        <input type="text" placeholder="Inserisci url: ">
+        <button class="load">Carica Immagine</button>
+        <button class="download">scarica immagine</button>
+        <button class="rubber">Gomma</button>
+    </div>
+    <div class="effects">
+        <div>
+            <label for="">Swirl</label>
+            <input type="checkbox" class="swirl">
+        </div>
+    </div>
     <canvas>
 
     </canvas>
 
+    <!-- <img src="//" alt="cv" style="display: none;"> -->
 </body>
 </html>

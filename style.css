@@ -1,3 +1,133 @@
 canvas {
+    /* border: 1px solid black; */
+    margin: 0;
+    display: block;
+}
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    /* overflow-y: hidden; */
+}
+img {
     border: 1px solid black;
+}
+.settings {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    bottom: 10vh;
+    width: 85vh;
+    border-radius: 2em;
+    gap: 2em;
+    padding: 0em 4em;
+    height: 10vh;
+    background-color: rgba(0, 0, 0, 0.600);
+    backdrop-filter: blur(5px);
+    transform: translateY(10vh) scale(50%);
+    transition: 0.3s ease-in-out;
+}
+video {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.settings * {
+    opacity: 0;
+    transition: 0.2s ease-in;
+    transform: scale(50%);
+}
+.settings:hover {
+    background-color: rgba(0, 0, 0, 0.800);
+    transform: translateY(5vh) scale(100%);
+}
+.settings:hover * {
+    opacity: 1;
+    transform: scale(100%);
+}
+.palette, .effects {
+    width: 10vh;
+    height: 10vh;
+    border-radius: 50%;
+    position: fixed;
+    left: 0%;
+    top: calc(50% - 10vh);
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid black;
+    transition: 0.3s ease-in-out;
+    transform: translateX(-5%) scale(70%);
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.600);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+}
+.settings button {
+    background-color: white;
+    outline: none;
+    border: 1px solid black;
+    border-radius: 2em;
+    padding: 1em;
+}
+.palette:hover, .effects:hover{
+    transform: translateX(-32%) scale(100%) rotate(90deg);
+    backdrop-filter: unset;
+    width: 20vw;
+    border-radius: 2em;
+    background-color: rgba(0, 0, 0, 0.800);
+}
+.effects { 
+    right: 0%;
+    left: unset;
+}
+.effects:hover {
+    transform: translateX(32%) rotate(90deg);
+}
+
+.effects div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.palette *, .effects * {
+    opacity: 0;
+    transform: scale(50%);
+    transition: 0.2s ease-in;
+}
+.palette:hover *, .effects:hover * {
+    opacity: 1;
+    transform: scale(100%);
+}
+.effects * {
+    display: flex;
+    flex-direction: column;
+}
+.effects:hover * {
+    border: 1px solid green;
+}
+.color {
+    width: 2vh;
+    height: 2vh;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.color[clicked]::after {
+    content: "";
+    border: 2px solid white;
+    width: 1vh;
+    border-radius: 50%;
+    aspect-ratio: 1/1;
+}
+.color:hover {
+    cursor: pointer;
 }
