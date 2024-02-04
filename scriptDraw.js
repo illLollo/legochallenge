@@ -1,5 +1,5 @@
 const canvas = document.querySelector('canvas')
-const context = canvas.getContext('2d')
+const context = canvas.getContext('2d', { willReadFrequently: true })
 
 canvas.width = window.innerWidth - window.scrollX
 canvas.height = window.innerHeight - window.scrollY
@@ -28,6 +28,7 @@ class DrawProps
     #radius = 1
     #animationFrame = null
     #isSwirlActive = false
+    #isRainActive = false
     #swirlAnimation = () => {
         fxCanvas.draw(fxCanvas.texture(bufferCanvas))
         fxCanvas.swirl(drawProps.getCoords().x, drawProps.getCoords().y, 100, 3).update()
@@ -102,6 +103,8 @@ class DrawProps
     }
     swirl(fxCanvas)
     {
+        if(this.#isRainActive)
+            return
 
         if (!this.#isSwirlActive)
         {
@@ -117,7 +120,7 @@ class DrawProps
         else
         {
             // window.removeEventListener('mousemove', this.#swirlAnimation)
-            window.requestAnimationFrame(render)
+            drawProps.setAnimationFrame(window.requestAnimationFrame(render))
             this.#isSwirlActive = false
         }
     }
@@ -126,6 +129,7 @@ class DrawProps
         if (this.#isSwirlActive)
             this.#swirlAnimation()
     }
+    
  
 
 }
@@ -138,7 +142,7 @@ const checkPinching = (preds) => {
 }
 const video = document.querySelector('video')
 handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
-.then((model) => {
+.then(async (model) => {
 
     const animate = async () =>
     {
@@ -160,14 +164,20 @@ handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
                 }, null)
                 if (detections !== null)
                 {
-                    const [ angleX, angleY, boxWidth, boxHeight ] = detections.bbox
+                    let [ angleX, angleY, boxWidth, boxHeight ] = detections.bbox
 
-                    drawProps.getCoords().x = angleX + boxWidth / 2 + canvas.offsetLeft / 2
+                    angleX = angleX * (canvas.width / 500)
+                    angleY = angleY * (canvas.height / 500)
+
+                    drawProps.getCoords().x = angleX + boxWidth / 2
                     drawProps.getCoords().y = angleY + boxHeight / 2
 
-                    console.log(drawProps.getCoords())
+                    // console.log(detections.bbox[0], detections.bbox[1], drawProps.getCoords().x, drawProps.getCoords().y)
 
-                    drawProps.doSwirlAnimation()
+                    if (drawProps.isSwirlActive())
+                        drawProps.doSwirlAnimation()
+                    // if (drawProps.isRainActive())
+                    //     drawProps.doRainAnimation()
 
                 }
                 
@@ -179,42 +189,102 @@ handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
         
     }
     
-    handTrack.startVideo(video)
-    .then((value) => {
-        animate()        
-    })
+    const { status } = await handTrack.startVideo(video)
+    if (!status)
+      document.querySelector('body').innerHTML = `<h2> Impossibile avviare la videocamera, riprova o acconsenti l'utilizzo dal browser! </h2>`
+    else
+      animate()
+
 })
+
 const drawProps = new DrawProps(canvas, context)
 
 const bufferCanvas = document.createElement('canvas')
 bufferCanvas.width = canvas.width
 bufferCanvas.height = canvas.height
-const bufferContext = bufferCanvas.getContext('2d')
+const bufferContext = bufferCanvas.getContext('2d', { willReadFrequently: true } )
 
 const MULTIPLIER = 1
 
 const fxCanvas = fx.canvas()
 
+// const inputs = document.querySelectorAll('input[type="checkbox"]')
+// inputs.forEach((input) => 
+// {
+//     input.addEventListener('change', function () 
+//     {
+//         if (this.checked)
+//         {
+//           inputs.forEach((inp) => 
+//           {
+//             if (inp.checked && input !== inp)
+//               inp.click()
+//           })
+//         }
 
-document.querySelector('.swirl').addEventListener('input', () =>
+//     })
+// });
+document.querySelector('.swirl').addEventListener('change', () =>
 {
+  console.log('change')
     drawProps.swirl(fxCanvas)
 })
-
-document.querySelector('.load').addEventListener('click', async function () 
+document.querySelector('.change_color').addEventListener('change', async function () 
 {
-    const image = new Image()
-    image.src = document.querySelector('input[type="text"]').value
-    
-    image.onload = () => 
+    const elaborateAll = async (divid) => 
     {
-        // canvas.width = (image.width * MULTIPLIER)  % window.innerWidth
-        // canvas.height = (image.height * MULTIPLIER) % window.innerHeight
-        // canvas.width = (image.width * MULTIPLIER)  % window.innerWidth
-        // canvas.height = (image.height * MULTIPLIER) % window.innerHeight
-        drawProps.setImage(image)
-    }
+      const elaborateSlice = async (startX, endX) => 
+      {
+        for (let x = startX; x < endX; x++) 
+          for (let y = 0; y < bufferCanvas.height; y++) 
+          {
+            const p = bufferContext.getImageData(x, y, 1, 1).data;
+            bufferContext.fillStyle = invertHex("#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6));
+            bufferContext.fillRect(x, y, 1, 1);
+          }
+      }
+
+      const sliceWidth = Math.ceil(bufferCanvas.width / divid);
+      const promises = [];
     
+      for (let i = 0; i < divid; i++) 
+      {
+        const startX = i * sliceWidth;
+        const endX = startX + sliceWidth;
+        promises.push(elaborateSlice(startX, endX));
+      }
+    
+      await Promise.all(promises);
+    }
+    await elaborateAll(5)
+    drawProps.setImage(new Image(bufferCanvas.toDataURL()))
+    // context.drawImage(bufferCanvas, 0, 0)
+    // console.log("START: " + Math.round((bufferCanvas.width / 4) * i) + " END: " + Math.round((width / 4) * i))
+
+})
+
+document.querySelector('input[type="file"]').addEventListener('change', async function () 
+{
+    console.log(this.files)
+
+    if (this.files && this.files[0])
+    {
+        const freader = new FileReader()
+        freader.onload = (e) => {
+            
+            const image = new Image()
+            image.src = e.target.result
+
+            console.log(e, image)
+
+            image.onload = () => 
+            {
+              bufferContext.drawImage(image, 0, 0, bufferCanvas.width, bufferCanvas.height)
+              drawProps.setImage(image)
+            }
+        }
+        freader.readAsDataURL(this.files[0])
+    }
 })
 canvas.addEventListener('mouseenter', (e) => 
 {
@@ -238,6 +308,8 @@ window.addEventListener('mousemove', (e) =>
 //     drawProps.getCoords().y = e.clientY - canvas.offsetTop
 
     // console.log(drawProps.getCoords())
+
+    // console.log(drawProps.getImage()?.src)
 })
 
 drawProps.setRadius(10)
@@ -253,7 +325,6 @@ const drawCursor = () =>
 }
 const drawLine = () =>
 {
-
     if (drawProps.isDrawable())
     {
         context.beginPath()
@@ -276,7 +347,7 @@ const render = () =>
     context.clearRect(0, 0, canvas.width, canvas.height)
     
     if (drawProps.getImage() !== null)
-        context.drawImage(drawProps.getImage(), 0, 0, canvas.width, canvas.height)
+        context.drawImage(drawProps.getImage(), 0, 0, bufferCanvas.width, bufferCanvas.height)
 
     context.drawImage(bufferCanvas, 0, 0)
     
@@ -297,12 +368,13 @@ render()
 
 document.querySelector('.download').addEventListener('click', function () 
 {    
-    const a =  document.createElement('a')
+    const a = document.createElement('a')
     a.href = canvas.toDataURL("image/jpeg", 1)
     a.download = "Immagine.png"
     a.click()
     a.remove()
 })
+document.querySelector('video').style.height = '400px'
 const colors = document.querySelectorAll('.color')
 
 colors.forEach((color) => {
@@ -310,20 +382,27 @@ colors.forEach((color) => {
         colors.forEach((color) => color.removeAttribute('clicked'))
         color.setAttribute('clicked', 'true')
 
-        drawProps.setLineColor(rgbToHex(getComputedStyle(color).backgroundColor))
+        console.log(getComputedStyle(color).backgroundColor, invertHex(getComputedStyle(color).backgroundColor))
+
+
+        drawProps.setLineColor(invertHex(getComputedStyle(color).backgroundColor))
         document.querySelector('.colorpicker').value = drawProps.getLineColor()
     })
 });
-document.querySelector('.rubber').addEventListener('click', () => {
+document.querySelector('.rubber').addEventListener('click', function () {
     if (!drawProps.isSwirlActive())
-            drawProps.switchMode()
+    {
+      drawProps.switchMode()
+      this.innerHTML = `Gomma ${drawProps.isPenActive() ? 'Off' : 'On'}`
+    }
 })
 document.querySelector('.colorpicker').addEventListener('input', function () 
 {
     drawProps.setLineColor(this.value)
     colors.forEach((color) => 
     {
-        if (rgbToHex(getComputedStyle(color).backgroundColor) == this.value)
+      console.log(rgbCSSToHex(getComputedStyle(color).backgroundColor), this.value)
+        if (rgbCSStoHex(getComputedStyle(color).backgroundColor) === this.value.toUpperCase())
         {
             colors.forEach(color => color.removeAttribute('clicked'))
             color.setAttribute('clicked', 'true')
@@ -331,11 +410,31 @@ document.querySelector('.colorpicker').addEventListener('input', function ()
         }
     });
 })
-const rgbToHex = (rgb) => 
+const rgbCSSToHex = (rgbString) => 
 {
-    const rgbArray = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    return "#" + ("0" + parseInt(rgbArray[1], 10).toString(16)).slice(-2) +
-                        ("0" + parseInt(rgbArray[2], 10).toString(16)).slice(-2) +
-                        ("0" + parseInt(rgbArray[3], 10).toString(16)).slice(-2);
+  const match = rgbString.match(/(\d+),\s*(\d+),\s*(\d+)/)
+  if (match) 
+  {
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
 
+    const hexColor = '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+
+    return hexColor.toUpperCase(); 
+  }
+  return null;
+}
+const rgbToHex = (r, g, b) => 
+{
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+
+  return '#' + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
+}
+const invertHex = (hex) =>
+{
+  hex = hex.slice(1)
+  return '#'.concat((+(`0x1${hex}`) ^ 0xFFFFFF).toString(16).slice(1).toUpperCase())
 }

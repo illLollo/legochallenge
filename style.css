@@ -3,6 +3,9 @@ canvas {
     margin: 0;
     display: block;
 }
+* {
+    font-family: sans-serif;
+}
 body {
     margin: 0;
     display: flex;
@@ -10,7 +13,7 @@ body {
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    /* overflow-y: hidden; */
+    overflow-y: hidden;
 }
 img {
     border: 1px solid black;
@@ -84,11 +87,18 @@ video {
     background-color: rgba(0, 0, 0, 0.800);
 }
 .effects { 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
     right: 0%;
     left: unset;
 }
 .effects:hover {
-    transform: translateX(32%) rotate(90deg);
+
+    transform: translateX(23%) rotate(90deg);
+    width: 15vw;
+    height: 13vh;
 }
 
 .effects div {
@@ -108,9 +118,27 @@ video {
 .effects * {
     display: flex;
     flex-direction: column;
+    opacity: 0;
 }
-.effects:hover * {
-    border: 1px solid green;
+
+.effects:hover div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transform: rotate(-90deg);
+}
+.effects:hover div div {
+    display: flex;
+    width: fit-content;
+    flex-direction: row;    
+    justify-content: center;
+    align-items: center;
+    transform: rotate(0deg);
+    gap: 0.5em;
+}
+.effects:hover div div * {
+    color: white;
 }
 .color {
     width: 2vh;
@@ -130,4 +158,27 @@ video {
 }
 .color:hover {
     cursor: pointer;
+}
+.palette, .color, .effects, video
+{
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.14), 0 3px 6px rgba(0, 0, 0, 0.20);
+}
+button {
+    transition: 0.3s ease-in-out;
+}
+button:hover {
+    background-color: black;
+    color: white;
+    transform: scale(1.1);
+    cursor: pointer;
+
+}
+video {
+    position: absolute;
+    left: 8%;
+    top: 12%;
+    width: fit-content;
+    height: fit-content;
+    border-radius: 50%;
+    transform: scale(10);
 }

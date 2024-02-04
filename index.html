@@ -12,32 +12,36 @@
     <script src="https://evanw.github.io/glfx.js/glfx.js"></script>
 </head>
 <body>
-    <video src="" width="600px" height="400px" style="display: none;">
+    <video src="" width="600px" height="400px">
         
     </video>
     <div class="palette">
-        <div class="color" style="background-color: red"></div>
-        <div class="color" style="background-color: blue"></div>
-        <div class="color" style="background-color: black" clicked></div>
-        <div class="color" style="background-color: green"></div>
-        <div class="color" style="background-color: yellow"></div>
+        <div class="color" style="background-color: #FF0000"></div>
+        <div class="color" style="background-color: #0000FF"></div>
+        <div class="color" style="background-color: #000000" clicked></div>
+        <div class="color" style="background-color: #00FF00"></div>
+        <div class="color" style="background-color: #FFFF00"></div>
         <input class="colorpicker" type="color">
     </div>
     <div class="settings">
-        <input type="text" placeholder="Inserisci url: ">
-        <button class="load">Carica Immagine</button>
-        <button class="download">scarica immagine</button>
-        <button class="rubber">Gomma</button>
+        <input type="file" placeholder="Inserisci url: ">
+        <button class="download button">Scarica Immagine</button>
+        <button class="rubber button">Gomma Off</button>
+        <button class="button" onclick="window.location.reload()">Reset</button>
     </div>
     <div class="effects">
         <div>
-            <label for="">Swirl</label>
-            <input type="checkbox" class="swirl">
+            <div>
+                <p>Swirl</p>
+                <input type="checkbox" class="swirl">
+            </div>
+            <div>
+                <p>Colori</p>
+                <input type="checkbox" class="change_color">
+            </div>
         </div>
     </div>
     <canvas>
-
-    </canvas>
 
     <!-- <img src="//" alt="cv" style="display: none;"> -->
 </body>
