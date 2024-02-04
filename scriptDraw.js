@@ -19,6 +19,7 @@ class DrawProps
     #context = null
     #canvas = null
     #coords = { x : 0, y : 0 }
+    #startCoords = { x : 0, y : 0 }
     #drawable = false
     #linecolor = "#000000"
     #linewidth = 1
@@ -58,10 +59,6 @@ class DrawProps
     {
         this.#coords = value
     }
-    // setPrevCoords(value)
-    // {
-    //     this.#prevcoords = value
-    // }
     setLineCap(value)
     {
         this.#linecap = value
@@ -75,7 +72,7 @@ class DrawProps
     getLineColor() { return this.#linecolor }
     isDrawable() { return this.#drawable }
     getCoords() { return this.#coords }
-    // getPrevCoords() { return this.#prevCoords }
+    getStartCoords() { return this.#startCoords }
     getLineCap() { return this.#linecap }
     getImage() { return this.#image }
     getRadius() { return this.#radius }
@@ -113,13 +110,11 @@ class DrawProps
     
             fxCanvas.draw(fxCanvas.texture(bufferCanvas))
     
-            // window.addEventListener('mousemove', this.#swirlAnimation)
             this.#isSwirlActive = true
             
         }
         else
         {
-            // window.removeEventListener('mousemove', this.#swirlAnimation)
             drawProps.setAnimationFrame(window.requestAnimationFrame(render))
             this.#isSwirlActive = false
         }
@@ -129,8 +124,6 @@ class DrawProps
         if (this.#isSwirlActive)
             this.#swirlAnimation()
     }
-    
- 
 
 }
 const checkPinching = (preds) => {
@@ -148,9 +141,8 @@ handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
     {
         const preds = await model.detect(video)
         
-            drawProps.setDrawable(checkPinching(preds))
-            if (preds.length > 0)
-            {
+        if (preds.length > 0)
+        {
 
                 const detections = preds.reduce((prev, current) => 
                 {
@@ -158,31 +150,39 @@ handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
                         return prev
                     if (prev === null)
                         return current
-
+                      
                     return prev.score > current.score ? prev : current
 
-                }, null)
+                  }, null)
                 if (detections !== null)
                 {
                     let [ angleX, angleY, boxWidth, boxHeight ] = detections.bbox
-
+                    
                     angleX = angleX * (canvas.width / 500)
                     angleY = angleY * (canvas.height / 500)
 
                     drawProps.getCoords().x = angleX + boxWidth / 2
                     drawProps.getCoords().y = angleY + boxHeight / 2
+                    
 
-                    // console.log(detections.bbox[0], detections.bbox[1], drawProps.getCoords().x, drawProps.getCoords().y)
+                    const result = checkPinching(preds)
+
+                    if (result && result !== drawProps.isDrawable()) //result TRUE ma prima era FALSE
+                    {
+                      drawProps.getStartCoords().x = drawProps.getCoords().x
+                      drawProps.getStartCoords().y = drawProps.getCoords().y
+                    }
+
+                    if (!result && result !== drawProps.isDrawable()) //result FALSE ma prima era TRUE
+                    {
+                      context.beginPath()
+                    }
+
+                    drawProps.setDrawable(result)
 
                     if (drawProps.isSwirlActive())
                         drawProps.doSwirlAnimation()
-                    // if (drawProps.isRainActive())
-                    //     drawProps.doRainAnimation()
-
-                }
-                
-
-                
+                }   
             }
 
         window.requestAnimationFrame(animate)
@@ -199,7 +199,7 @@ handTrack.load({ scoreTreshold: 0.41, flipHorizontal: true })
 
 const drawProps = new DrawProps(canvas, context)
 
-const bufferCanvas = document.createElement('canvas')
+const bufferCanvas = document.querySelector('.c2')
 bufferCanvas.width = canvas.width
 bufferCanvas.height = canvas.height
 const bufferContext = bufferCanvas.getContext('2d', { willReadFrequently: true } )
@@ -208,39 +208,32 @@ const MULTIPLIER = 1
 
 const fxCanvas = fx.canvas()
 
-// const inputs = document.querySelectorAll('input[type="checkbox"]')
-// inputs.forEach((input) => 
-// {
-//     input.addEventListener('change', function () 
-//     {
-//         if (this.checked)
-//         {
-//           inputs.forEach((inp) => 
-//           {
-//             if (inp.checked && input !== inp)
-//               inp.click()
-//           })
-//         }
-
-//     })
-// });
 document.querySelector('.swirl').addEventListener('change', () =>
 {
   console.log('change')
     drawProps.swirl(fxCanvas)
-})
+  })
 document.querySelector('.change_color').addEventListener('change', async function () 
 {
-    const elaborateAll = async (divid) => 
+  const tempCanvas = document.createElement('canvas', { willReadFrequently : true })
+  const tempContext = tempCanvas.getContext('2d')
+
+  tempCanvas.width = canvas.width
+  tempCanvas.height = canvas.height
+
+  if (drawProps.getImage() !== null)
+    tempContext.drawImage(drawProps.getImage(), 0, 0, canvas.width, canvas.height)
+  
+  const elaborateAll = async (divid) => 
+  {
+    const elaborateSlice = async (startX, endX) => 
     {
-      const elaborateSlice = async (startX, endX) => 
-      {
-        for (let x = startX; x < endX; x++) 
+      for (let x = startX; x < endX; x++) 
           for (let y = 0; y < bufferCanvas.height; y++) 
           {
-            const p = bufferContext.getImageData(x, y, 1, 1).data;
-            bufferContext.fillStyle = invertHex("#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6));
-            bufferContext.fillRect(x, y, 1, 1);
+            const p = tempContext.getImageData(x, y, 1, 1).data;
+            tempContext.fillStyle = invertHex("#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6));
+            tempContext.fillRect(x, y, 1, 1);
           }
       }
 
@@ -257,10 +250,13 @@ document.querySelector('.change_color').addEventListener('change', async functio
       await Promise.all(promises);
     }
     await elaborateAll(5)
-    drawProps.setImage(new Image(bufferCanvas.toDataURL()))
-    // context.drawImage(bufferCanvas, 0, 0)
-    // console.log("START: " + Math.round((bufferCanvas.width / 4) * i) + " END: " + Math.round((width / 4) * i))
 
+    const image = new Image()
+    image.src = tempCanvas.toDataURL()
+
+    drawProps.setImage(image)
+
+    bufferContext.drawImage(tempCanvas, 0, 0)
 })
 
 document.querySelector('input[type="file"]').addEventListener('change', async function () 
@@ -286,31 +282,6 @@ document.querySelector('input[type="file"]').addEventListener('change', async fu
         freader.readAsDataURL(this.files[0])
     }
 })
-canvas.addEventListener('mouseenter', (e) => 
-{
-    // drawProps.x = e.clientX - canvas.offsetLeft
-    // drawProps.y = e.clientY - canvas.offsetTop
-    
-    // document.body.style.cursor = 'none'
-})
-canvas.addEventListener('mouseleave', () => {
-    // document.body.style.cursor = 'default'
-})
-
-// canvas.addEventListener('mousedown', (e) => 
-// {
-//     drawProps.setDrawable(true)
-// })
-// canvas.addEventListener('mouseup', () => drawProps.setDrawable(false)) 
-window.addEventListener('mousemove', (e) => 
-{
-//     drawProps.getCoords().x = e.clientX - canvas.offsetLeft
-//     drawProps.getCoords().y = e.clientY - canvas.offsetTop
-
-    // console.log(drawProps.getCoords())
-
-    // console.log(drawProps.getImage()?.src)
-})
 
 drawProps.setRadius(10)
 
@@ -327,10 +298,25 @@ const drawLine = () =>
 {
     if (drawProps.isDrawable())
     {
-        context.beginPath()
-        context.arc(drawProps.getCoords().x, drawProps.getCoords().y, 5, 0, Math.PI * 2)
-        context.closePath()
-        context.fill()
+      context.beginPath()
+      context.moveTo(drawProps.getStartCoords().x, drawProps.getStartCoords().y)
+      context.lineCap = 'round'
+      context.lineWidth = 3;
+      context.lineTo(drawProps.getCoords().x, drawProps.getCoords().y);
+      context.strokeStyle = drawProps.getLineColor();
+      context.stroke();
+
+      drawProps.getStartCoords().x = drawProps.getCoords().x
+      drawProps.getStartCoords().y = drawProps.getCoords().y
+
+      console.log(drawProps.getStartCoords(), drawProps.getCoords())
+
+      // context.moveTo(drawProps.getCoords().x, drawProps.getCoords().y)
+
+        // bufferContext.beginPath()
+        // // bufferContext.arc(drawProps.getCoords().x, drawProps.getCoords().y, 5, 0, Math.PI * 2)
+        // bufferContext.closePath()
+        // bufferContext.fill()
     }
     
 }
@@ -345,20 +331,21 @@ const rubberArc = () =>
 const render = () => 
 {
     context.clearRect(0, 0, canvas.width, canvas.height)
-    
-    if (drawProps.getImage() !== null)
-        context.drawImage(drawProps.getImage(), 0, 0, bufferCanvas.width, bufferCanvas.height)
-
     context.drawImage(bufferCanvas, 0, 0)
     
     if (drawProps.isPenActive())
-        drawLine()
-    else
-        rubberArc()
-    
+    {
+      drawLine() 
+      bufferContext.drawImage(canvas, 0, 0, canvas.width, canvas.height)
+    }
+    else  
+    {
+      if (drawProps.getImage() !== null)
+        bufferContext.drawImage(drawProps.getImage(), 0, 0, bufferCanvas.width, bufferCanvas.height)
+      rubberArc()
 
-    bufferContext.drawImage(canvas, 0, 0, canvas.width, canvas.height)
-    
+      bufferContext.drawImage(canvas, 0, 0)
+    } 
     if (drawProps.isCursorInsideCanvas())
         drawCursor()
 
